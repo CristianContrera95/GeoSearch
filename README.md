@@ -3,8 +3,13 @@
 #### Correr el script
 1) Descomprimir el zip 
 2) Ejecutar ``` ./geosearch.sh create ```
-3) Copiar el json con las credenciales en la carpeta creds (nombrar el archivo como *credentials.json*) or si posee un token de acceso copiarlo con el nombre *token.pickle*
-4) En *geosearch.py* cambiar el valor de la variable **DRIVE_DIR** con el id de la carpeta padre donde comenzara la busqueda (ultima valor alfanumerico encontrado en la url en drive: *drive.google.com/drive/u/0/folders/**15aZijgdBWQ5WCmSaemTNsb9z9vOVbo6B**)*
+3) Copiar el json con las credenciales en la carpeta creds (nombrar el archivo como *credentials.json*) o si posee un token de acceso copiarlo con el nombre *token.pickle*  
+(obtenga sus credenciales en: 
+[Drive-API](https://developers.google.com/drive/api/v3/quickstart/python) o
+[Console-API](https://console.cloud.google.com/apis/dashboard) )
+4) En *geosearch.py* cambiar el valor de la variable **DRIVE_DIR** con el id de la carpeta padre donde comenzara la busqueda recusivamente (ver argumentos).  
+ El id es el ultimo valor alfanumerico encontrado en la url en drive:  
+ ejemplo: *drive.google.com/drive/u/0/folders/**15aZijgdBWQ5WCmSaemTNsb9z9vOVbo6B** *  
 5) Ejecutar el script con: ```./geosearch.sh run latitud longitud metros```
 ejemplo:
 ```
