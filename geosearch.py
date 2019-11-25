@@ -24,7 +24,7 @@ recursive = True
 CRED_DIR = 'creds'
 OUTPUT_DIR = 'data'
 JSON_FILENAME = 'images_data_{}.json'.format(dt.now().strftime("%d-%m-%y_%H-%M-%S"))
-DRIVE_DIR = '0B7pum0YiE4zdOXF4NTdnUjZoemc'
+DRIVE_DIR = '0AMjJ9wCLSgjJUk9PVA'
 SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.metadata']
 
 API_VERSION = 'v3'
@@ -79,8 +79,9 @@ def calculate_distance(coordinates1, coordinates2):
     return abs(r_earth * c)
 
 
-def write_log(data, ex_type):
-    with open('{}_log.txt'.format(ex_type), 'w') as fp:
+def write_log(data, ex_type, title=''):
+    with open('{}_log.txt'.format(ex_type), 'a') as fp:
+        fp.write(title+'\n')
         fp.write(str(data))
         fp.write('\n')
 
@@ -191,11 +192,12 @@ def save_metadata(request_id, response, exception, q=''):
     
     global count, images_total, images_dict
 
+    if exception is not None:
+        write_log(ex, 'EXCEPTION', title=q)
+        return
     while True:
 
         for image in response.get('files', []):
-            if image['name'] == 'IMG_20191124_143221.jpg':
-                print_metadata(image)
             images_total += 1
             if ('imageMediaMetadata' in image) and ('location' in image['imageMediaMetadata']):
                 image['latitude'] = image['imageMediaMetadata']['location']['latitude']
@@ -213,22 +215,38 @@ def save_metadata(request_id, response, exception, q=''):
         else:
             response = files.list(pageSize=1000, spaces=SPACES, q=q, fields=fields, pageToken=page_token).execute()
 
-# query for a unique request:
-# query = "(mimeType='image/jpeg') and (" + " or ".join(map(lambda idx: "('{}' in parents)".format(idx), folders_id)) + ")"
 
 http = Http(cache='.cache_geosearch')  # enable cache in drive
 batch = BatchHttpRequest()
 
-# add an http request for each folder
-for folder_id in folders_id:
-    query = "(mimeType='image/jpeg') and ('{}' in parents)".format(folder_id)
+# add a 100 http request to batchrequest
+total_querys = 100 if len(folders_id) >= 100 else len(folders_id)
+folder_per_query = (len(folders_id) // 100) + 1
+
+for i in range(total_querys-1):
+    start = i*folder_per_query
+    end = (i+1)*folder_per_query if (i+1)*folder_per_query < len(folders_id) else len(folders_id)-1
+
+    query = "(mimeType='image/jpeg') and (" + " or ".join(map(lambda idx: "('{}' in parents)".format(idx), folders_id[start:end])) + ")"
     batch.add(files.list(pageSize=1000, spaces=SPACES, q=query, fields=fields, pageToken=page_token),
-              partial(save_metadata, q=query))
+               partial(save_metadata, q=query))
+
+#-------------------------------------------------------------------------------------------------------
+# OTHER queries implemented:
+
+# """query for a unique request:"""
+# query = "(mimeType='image/jpeg') and (" + " or ".join(map(lambda idx: "('{}' in parents)".format(idx), folders_id)) + ")"
+
+# """One query per folder:"""
+# for folder_id in folders_id:
+#     query = "(mimeType='image/jpeg') and ('{}' in parents)".format(folder_id)
+#     batch.add(files.list(pageSize=1000, spaces=SPACES, q=query, fields=fields, pageToken=page_token),
+#               partial(save_metadata, q=query))
 
 try:
     batch.execute(http=http)
     if vervose:
-        print('Total images processed', images_total)
+        print('Total images processed', images_total, 'in {} folders'.format(len(folders_id)))
 except Exception as ex:
     print('Error to connect API')
     write_log(ex, 'EXCEPTION')
