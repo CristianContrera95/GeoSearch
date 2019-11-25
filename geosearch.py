@@ -258,6 +258,9 @@ for i in range(1,6):
             print('Total images processed', images_total, 'in {} folders'.format(len(folders_id)))
     except Exception as ex:
         ex_ = ex
+        images_dict = {}
+        count = 0
+        images_total = 0
         print('Error to connect API. Trying again in {} seconds'.format(i))
         time.sleep(i)
     else:
