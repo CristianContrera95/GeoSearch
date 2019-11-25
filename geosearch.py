@@ -4,6 +4,7 @@ import pickle
 import os.path
 import sys
 import json
+import time
 from math import pi, sin, cos, sqrt, atan2, radians
 from datetime import datetime as dt
 from functools import partial
@@ -216,6 +217,7 @@ def save_metadata(request_id, response, exception, q=''):
             response = files.list(pageSize=1000, spaces=SPACES, q=q, fields=fields, pageToken=page_token).execute()
 
 
+page_token = None
 http = Http(cache='.cache_geosearch')  # enable cache in drive
 batch = BatchHttpRequest()
 
@@ -223,9 +225,12 @@ batch = BatchHttpRequest()
 total_querys = 100 if len(folders_id) >= 100 else len(folders_id)
 folder_per_query = (len(folders_id) // 100) + 1
 
-for i in range(total_querys-1):
-    start = i*folder_per_query
-    end = (i+1)*folder_per_query if (i+1)*folder_per_query < len(folders_id) else len(folders_id)-1
+end = 0
+for i in range(folder_per_query, total_querys+folder_per_query, folder_per_query):
+    start = end
+    end = i if i < len(folders_id) else len(folders_id)-1
+
+    if start == end: break
 
     query = "(mimeType='image/jpeg') and (" + " or ".join(map(lambda idx: "('{}' in parents)".format(idx), folders_id[start:end])) + ")"
     batch.add(files.list(pageSize=1000, spaces=SPACES, q=query, fields=fields, pageToken=page_token),
@@ -243,13 +248,24 @@ for i in range(total_querys-1):
 #     batch.add(files.list(pageSize=1000, spaces=SPACES, q=query, fields=fields, pageToken=page_token),
 #               partial(save_metadata, q=query))
 
-try:
-    batch.execute(http=http)
-    if vervose:
-        print('Total images processed', images_total, 'in {} folders'.format(len(folders_id)))
-except Exception as ex:
-    print('Error to connect API')
-    write_log(ex, 'EXCEPTION')
+
+works = False
+ex_ = None
+for i in range(1,6):
+    try:
+        batch.execute(http=http)
+        if vervose:
+            print('Total images processed', images_total, 'in {} folders'.format(len(folders_id)))
+    except Exception as ex:
+        ex_ = ex
+        print('Error to connect API. Trying again in {} seconds'.format(i))
+        time.sleep(i)
+    else:
+        works = True
+        break
+if not works:
+    print('Error to connect API. Tries reached')
+    write_log(ex_, 'EXCEPTION')
     exit(0)
 
 with open(os.path.join(OUTPUT_DIR, JSON_FILENAME), 'w') as fp:
