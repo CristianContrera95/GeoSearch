@@ -1,8 +1,8 @@
 
 
 venv_exist=$(ls | grep "venv" | wc -l)
+cred_exist=$(ls | grep "creds" | wc -l)
 
-#in first time load image from archive
 
 if [ "$1" == "create" ];
 then
@@ -10,7 +10,11 @@ then
 	then
 		rm -r venv
 	fi
-    virtualenv -p python3 venv
+        if [ $(( $cred_exist )) == 1 ]:
+        then
+                mkdir creds
+        fi
+        virtualenv -p python3 venv
 	source venv/bin/activate
 	pip install -r requeriments.txt
 	deactivate
