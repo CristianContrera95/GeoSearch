@@ -75,11 +75,11 @@ def calculate_distance(coordinates1, coordinates2):
     r_earth = 6378 * 1000  # earth radius in mts
 
     lat1 = pi * coordinates1[0] / 180.0
-    lon1 = pi * coordinates2[1] / 180.0
-    lat2 = pi * coordinates1[0] / 180.0
+    lon1 = pi * coordinates1[1] / 180.0
+    lat2 = pi * coordinates2[0] / 180.0
     lon2 = pi * coordinates2[1] / 180.0
 
-    d = (acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1 - lon2)) * r_earth)
+    d = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1 - lon2)) * r_earth
     return d
 
 
