@@ -210,7 +210,7 @@ if coordinates is not None:
 
 # Performed image search
 images_dict = {}
-fields = "nextPageToken, files(name, thumbnailLink, webContentLink, \
+fields = "nextPageToken, files(name, thumbnailLink, webContentLink, parents,\
           imageMediaMetadata/location/latitude, imageMediaMetadata/location/longitude, modifiedTime)"
 count = 0
 images_total = 0
@@ -328,3 +328,20 @@ if not count:
 else:
     print("{} images found.\nSee: {}\n".format(count, os.path.join(OUTPUT_DIR, JSON_FILENAME)))
 # -------------------------------------------------------------------------------------------------------
+
+parents_id = []
+for key in images_dict.keys():
+    for p in images_dict[key]['parents']: 
+        if p not in parents_id:
+            parents_id.append(p)
+
+fields = "nextPageToken, files(id, name)"
+query = "(mimeType='application/vnd.google-apps.folder')"
+
+folder_names = files.list(pageSize=1000, spaces=SPACES, q=query, fields=fields, pageToken=page_token)\
+                                 .execute()\
+                                 .get('files', [])
+for item in folder_names:
+    for key in images_dict.keys():
+        if item['id'] in images_dict[key]['parents']:
+            images_dict[key]['parents'] = item['name']
